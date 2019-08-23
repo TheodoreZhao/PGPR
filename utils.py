@@ -10,6 +10,8 @@ import scipy.sparse as sp
 from sklearn.feature_extraction.text import TfidfTransformer
 import torch
 
+import datetime
+
 
 # Dataset names.
 BEAUTY = 'beauty'
@@ -150,10 +152,16 @@ def compute_tfidf_fast(vocab, docs):
     return tfidf
 
 
+def beijing(sec, what):
+    beijing_time = datetime.datetime.now() + datetime.timedelta(hours=8)
+    return beijing_time.timetuple()
+
+
 def get_logger(logname):
+    logging.Formatter.converter = beijing
     logger = logging.getLogger(logname)
     logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('[%(levelname)s]  %(message)s')
+    formatter = logging.Formatter('%(asctime)s  [%(levelname)s]  %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
     ch = logging.StreamHandler(sys.stdout)
     ch.setFormatter(formatter)
     logger.addHandler(ch)
