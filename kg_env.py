@@ -110,35 +110,36 @@ class BatchKGEnvironment(object):
             actions.extend(candidate_acts)
             return actions
 
-        # # (5) If there are too many actions, do some deterministic trimming here!
-        # user_embed = self.embeds[USER][path[0][-1]]
-        # scores = []
-        # for r, next_node_id in candidate_acts:
-        #     next_node_type = KG_RELATION[curr_node_type][r]
-        #     if next_node_type == USER:
-        #         src_embed = user_embed
-        #     elif next_node_type == PRODUCT:
-        #         src_embed = user_embed + self.embeds[PURCHASE][0]
-        #     elif next_node_type == WORD:
-        #         src_embed = user_embed + self.embeds[MENTION][0]
-        #     else:  # BRAND, CATEGORY, RELATED_PRODUCT
-        #         src_embed = user_embed + self.embeds[PURCHASE][0] + self.embeds[r][0]
-        #     score = np.matmul(src_embed, self.embeds[next_node_type][next_node_id])
-        #     # This trimming may filter out target products!
-        #     # Manually set the score of target products a very large number.
-        #     # if next_node_type == PRODUCT and next_node_id in self._target_pids:
-        #     #    score = 99999.0
-        #     scores.append(score)
-        # candidate_idxs = np.argsort(scores)[-self.max_acts:]  # choose actions with larger scores
-        # candidate_acts = sorted([candidate_acts[i] for i in candidate_idxs], key=lambda x: (x[0], x[1]))
-        # actions.extend(candidate_acts)
-        # return actions
-
-        # (5)' If there are too many actions, do some random trimming here!
-        candidate_acts = sample(candidate_acts, self.max_acts)
-        candidate_acts = sorted(candidate_acts, key=lambda x: (x[0], x[1]))
+        # (5) If there are too many actions, do some deterministic trimming here!
+        user_embed = self.embeds[USER][path[0][-1]]
+        scores = []
+        for r, next_node_id in candidate_acts:
+            next_node_type = KG_RELATION[curr_node_type][r]
+            if next_node_type == USER:
+                src_embed = user_embed
+            elif next_node_type == PRODUCT:
+                src_embed = user_embed + self.embeds[PURCHASE][0]
+            elif next_node_type == WORD:
+                src_embed = user_embed + self.embeds[MENTION][0]
+            else:  # BRAND, CATEGORY, RELATED_PRODUCT
+                src_embed = user_embed + self.embeds[PURCHASE][0] + self.embeds[r][0]
+            score = np.matmul(src_embed, self.embeds[next_node_type][next_node_id])
+            # This trimming may filter out target products!
+            # Manually set the score of target products a very large number.
+            # if next_node_type == PRODUCT and next_node_id in self._target_pids:
+            #    score = 99999.0
+            scores.append(score)
+        candidate_idxs = np.argsort(scores)[-self.max_acts:]  # choose actions with larger scores
+        candidate_acts = sorted([candidate_acts[i] for i in candidate_idxs], key=lambda x: (x[0], x[1]))
         actions.extend(candidate_acts)
         return actions
+
+        # # (5)' If there are too many actions, you have to do some deterministic trimming here!
+        # # The random trimming will make this problem to be a non-deterministic RL!
+        # candidate_acts = sample(candidate_acts, self.max_acts)
+        # candidate_acts = sorted(candidate_acts, key=lambda x: (x[0], x[1]))
+        # actions.extend(candidate_acts)
+        # return actions
 
     def _batch_get_actions(self, batch_path, done):
         return [self._get_actions(path, done) for path in batch_path]
